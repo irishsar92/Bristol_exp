@@ -34,6 +34,12 @@ suppressPackageStartupMessages({
   library(forcats)
   library(fields) #for thin plate spline plots
   library(usethis)
+  library(gitcreds)
+  library(httr2)
 })
 
-edit_git_config()
+edit_git_config() #put name and email in
+use_git()#this adds git repo
+create_github_token() #takes you to github to create personal access token
+gitcreds_set() #grant access to GitHub for RStudio
+use_github()
