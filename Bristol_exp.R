@@ -61,4 +61,23 @@ dev <- read.csv('Bristol_dev.csv')
 ls <- read.csv('Bristol_lifespan.csv')
 
 
+#Change from wide to long
+adult_long <- adult %>% 
+  pivot_longer(
+    cols = `D1`:`D10`, 
+    names_to = "Day",
+    values_to = "value"
+  )
+
+adult_long <- na.omit(adult_long)
+
+#Change from wide to long
+dev_long <- dev %>% 
+  pivot_longer(
+    cols = `D1`:`D10`, 
+    names_to = "Day",
+    values_to = "value"
+  )
+
+
 
