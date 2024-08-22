@@ -1,3 +1,5 @@
+#.libPaths()
+
 suppressPackageStartupMessages({
   library(glmmTMB)
   library(car)
@@ -36,10 +38,27 @@ suppressPackageStartupMessages({
   library(usethis)
   library(gitcreds)
   library(httr2)
+  library(readr)
 })
 
-edit_git_config() #put name and email in
-use_git()#this adds git repo
-create_github_token() #takes you to github to create personal access token
-gitcreds_set() #grant access to GitHub for RStudio
+
+
+#edit_git_config() #put name and email in
+#use_git()#this adds git repo
+#create_github_token() #takes you to github to create personal access token
+#gitcreds_set() #grant access to GitHub for RStudio
 use_github()
+
+R.version
+
+## Experiment 1: Lifespan and reproduction for individuals in 10-15C temperatures either during development (egg stage to late L4, 'dev') or adulthood (24 hours from late L4 stage, 'adult')
+
+#Reproduction data
+adult <- read.csv('Bristol_adult.csv')
+dev <- read.csv('Bristol_dev.csv')
+
+#Lifespan data
+ls <- read.csv('Bristol_lifespan.csv')
+
+
+
