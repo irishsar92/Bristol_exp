@@ -1,5 +1,8 @@
-#.libPaths()
 
+
+
+# Setup 
+```{r}
 suppressPackageStartupMessages({
   library(glmmTMB)
   library(car)
@@ -42,8 +45,6 @@ suppressPackageStartupMessages({
   library(Hmisc)
 })
 
-
-
 #edit_git_config() #put name and email in
 #use_git()#this adds git repo
 #create_github_token() #takes you to github to create personal access token
@@ -55,8 +56,8 @@ R.version
 ## Experiment 1: Lifespan and reproduction for individuals in 10-15C temperatures either during development (egg stage to late L4, 'dev') or adulthood (24 hours from late L4 stage, 'adult')
 
 #Reproduction data
-adult <- read.csv('Bristol_adult.csv')
-dev <- read.csv('Bristol_dev.csv')
+adult <- read.csv('Bristol_adult_rep.csv')
+dev <- read.csv('Bristol_dev_rep.csv')
 
 #Lifespan data
 ls <- read.csv('Bristol_lifespan.csv')
@@ -66,9 +67,16 @@ dev_ls <- subset(ls, Treatment == 'dev')
 adult_ls <- subset(ls, Treatment == 'adult')
 
 #Lifespan data including mutants
-mut_LS <- read.csv('Bristol_LS.csv')
+mut_LS <- read.csv('Bristol_LS_mut.csv')
+mut_rep <- read.csv('Bristol_repro_mut.csv')
 
 
+level_order <- c('D1', 'D2', 'D3', 'D4','D5','D6','D7','D8','D9','D10')
+
+```
+
+# N2 only adult and dev daf-2 RNAi in 10 to 15C daily gradual thermocycle - format data
+```{r}
 #Change from wide to long
 adult_long <- adult %>% 
   pivot_longer(
@@ -97,13 +105,13 @@ dev_long$Day <- as.factor(dev_long$Day)
 ad_long_daf <- subset(adult_long, Treatment == 'daf')
 ad_long_ev <- subset(adult_long, Treatment == 'ev')
 
-
-level_order <- c('D1', 'D2', 'D3', 'D4','D5','D6','D7','D8','D9','D10')
+```
 
 
 
 ##### Plots for adult daf-2 reproduction
 
+```{r}
 ## Age-specific reproduction plot
 
 adult_rep <-ggplot(data=adult_long, aes(x=factor(Day, levels = level_order), y=value, group=Treatment, color=Treatment))+
@@ -114,9 +122,9 @@ adult_rep <-ggplot(data=adult_long, aes(x=factor(Day, levels = level_order), y=v
   theme_classic()+
   labs(y="Offspring number", x="", size=20)+
   labs(col="")+
-  theme(axis.title.y = element_text(size=12))+
-  theme(axis.title.x = element_text(size=12))+
-  scale_color_manual(values=c('deepskyblue4','darkorange2'))+
+  theme(axis.title.y = element_text(size=16))+
+  theme(axis.title.x = element_text(size=14))+
+  scale_color_manual(values=c('#4DBBD5FF','#E64B35FF'))+
   theme(legend.key.width = unit(0.5,"cm"))+
   coord_cartesian(ylim = c(0,85))+
   theme(legend.position = c(0.8,0.9))
@@ -124,8 +132,6 @@ adult_rep <-ggplot(data=adult_long, aes(x=factor(Day, levels = level_order), y=v
 
 #Early reproduction for daf-2 worms looks higher
 adult_rep
-
-ggsave('adult_rep_plot.pdf', height = 20, width = 25, units = 'cm')
 
 ## Calculate lambda
 
@@ -155,16 +161,11 @@ Lambda_adult <-
   load(Treatment, Lambda,
          idx = list(c("ev", "daf")))
 
-vector<-c('deepskyblue4','darkorange2')
+Lambda_dab <- mean_diff(Lambda_adult)
 
 ## Lambda dabestr plot
-Lambda_plot_adult <- dabest_plot(mean_diff(Lambda_adult),
-                          palette = c('deepskyblue4','darkorange2'), axes.title.fontsize=13, 
-                          rawplot.ylabel="Fitness", effsize.ylabel = "", rawplot.markersize=2, tick.fontsize=9)
-#Daf-2 worms have higher fitness in natural temperatures
+Lambda_plot_adult <- dabest_plot(Lambda_dab, FALSE, swarm_label = 'Lambda', raw_marker_spread = 1, custom_palette = 'npg', swarm_x_text = 12, swarm_y_text = 16, contrast_y_text = 16, contrast_x_text = 12, raw_marker_alpha = 0.3, tufte_size = 1)
 Lambda_plot_adult
-
-ggsave('lambda_adult.pdf', height = 20, width = 25, units = 'cm' )
 
 
 ## LRS
@@ -177,15 +178,14 @@ Totrep <-
   load(Treatment, Totrep,
          idx = c('ev','daf'))
 
-LRS <- dabest_plot(mean_diff(Totrep),
-            #color.column = Treatment, #this remove the legend - make sure colours are correct though
-            palette = c('darkorange2','deepskyblue4'), axes.title.fontsize=13, 
-            rawplot.ylabel="Total reproduction", effsize.ylabel = "Mean difference", rawplot.markersize=2, tick.fontsize=9)
+Totrep_dab <- mean_diff(Totrep)
 
-LRS
+LRS_adult <- dabest_plot(Totrep_dab, FALSE, swarm_label = 'LRS', raw_marker_spread = 1, custom_palette = 'npg', swarm_x_text = 12, swarm_y_text = 16, contrast_y_text = 16, contrast_x_text = 12, raw_marker_alpha = 0.3, tufte_size = 1)
+
+LRS_adult
 
 adult_repro <- ggarrange(adult_rep, 
-                         ggarrange(Lambda_plot_adult, LRS, ncol = 2),
+                         ggarrange(Lambda_plot_adult, LRS_adult, ncol = 2),
                          nrow = 2,
                          common.legend = TRUE)
 adult_repro
@@ -193,3 +193,101 @@ adult_repro
 ggsave('all_adult_rep.pdf', plot = adult_repro,
        width = 10, height = 10, units = 'in')
 
+```
+
+
+# Developmental daf-2 RNAi reproduction
+
+```{r}
+## Age-specific reproduction plots
+
+ dev_rep <-ggplot(data=dev_long, aes(x=factor(Day, levels = level_order), y=value, group=Treatment, color=Treatment))+
+  geom_jitter(alpha = 0.2, position = position_jitterdodge(jitter.width = 0.2, dodge.width = 0.5))+
+  stat_summary(fun.data="mean_cl_boot", geom="errorbar", size = 1, width=0.0, position = position_dodge(0.5)) +
+  stat_summary(fun.data="mean_cl_boot", geom="point", size = 3, position = position_dodge(0.5)) +
+  stat_summary(fun.data="mean_cl_boot", geom="line",  size=1, position = position_dodge(0.5)) +
+  theme_classic()+
+  labs(y="Offspring number", x="Day", size=20)+
+  labs(col="")+
+  theme(axis.title.y = element_text(size=16))+
+  theme(axis.title.x = element_text(size=14))+
+  scale_color_manual(values=c('#4DBBD5FF','#E64B35FF'))+
+  theme(legend.key.width = unit(0.5,"cm"))+
+  coord_cartesian(ylim = c(0,85))+
+  theme(legend.position = c(0.8,0.9))
+
+dev_rep
+
+
+## Calculate lambda
+
+L <- matrix(nrow = nrow(dev), ncol = 3)
+
+for (i in 1:nrow(dev)){
+  Les <- matrix(0, ncol = 12, nrow = 12)
+  diag(Les[-1,]) <- rep(1, 11) # add the 1s for survival probability diagonally
+  Fert <- c(0,0, as.numeric(as.vector(dev[i,][4:13]))) #the columns in data that has the reproductive counts
+  Fert[is.na(Fert)] <- 0 #makes all NAs into 0s
+  Les[1,] <- c(Fert)
+  class(Les) <- "leslie.matrix"
+  Lambda <- popbio::eigen.analysis(Les)$lambda1
+  L[i, 1:3] <- c(paste0(dev$Treatment[i]), paste0(dev$ID[i]), Lambda)
+  
+}
+
+print(Fert)
+colnames(L)<-c("Treatment", "ID", "Lambda")
+
+Data_dev<-as.data.frame(L)
+
+Data_dev$Lambda<-as.numeric(as.character(Data_dev$Lambda))
+
+Lambda_dev <-
+  Data_dev %>%
+  load(Treatment, Lambda,
+         idx = list(c("ev", "daf")))
+
+Lambda_dab <- mean_diff(Lambda_dev)
+
+## Lambda dabestr plot
+Lambda_plot_dev <- dabest_plot(Lambda_dab, FALSE, swarm_label = 'Lambda', raw_marker_spread = 1, custom_palette = 'npg', swarm_x_text = 12, swarm_y_text = 16, contrast_y_text = 16, contrast_x_text = 12, raw_marker_alpha = 0.3, tufte_size = 1)
+
+
+Lambda_plot_dev
+
+
+## LRS
+
+totalrep<-na.omit(as.data.frame.table(tapply(dev_long$value,list(dev_long$Treatment, dev_long$ID),sum)))
+
+names(totalrep)<-c("Treatment", "Replicate", "Totrep")
+
+Totrep <-
+  totalrep %>%
+  load(Treatment, Totrep,
+         idx = c('ev','daf'))
+
+Totrep_dab <- mean_diff(Totrep)
+
+LRS_dev <- dabest_plot(Totrep_dab, FALSE, swarm_label = 'LRS', raw_marker_spread = 1, custom_palette = 'npg', swarm_x_text = 12, swarm_y_text = 16, contrast_y_text = 16, contrast_x_text = 12, raw_marker_alpha = 0.3, tufte_size = 1)
+LRS_dev
+
+dev_repro <- ggarrange(dev_rep, 
+          ggarrange(Lambda_plot_dev, LRS_dev, ncol = 2),
+          nrow = 2,
+          common.legend = TRUE)
+dev_repro
+
+ggsave('all_dev_rep.pdf', plot = dev_repro,
+       width = 10, height = 10, units = 'in')
+
+```
+
+
+```{r}
+
+
+
+
+
+```
