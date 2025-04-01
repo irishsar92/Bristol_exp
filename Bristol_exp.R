@@ -470,10 +470,12 @@ ggsave('BristolLS_dev_plot.pdf', height = 8, width = 12)
 ```
 
 
-# N2s + SKN-1 and DAF-16 Mutants
+# N2s + SKN-1 and DAF-16 Mutants - Reproduction
 ```{r}
 
 repro_mut <- read.csv('Bristol_repro_mut.csv')
+
+
 
 mut_long <- repro_mut %>% 
   pivot_longer(
@@ -481,6 +483,9 @@ mut_long <- repro_mut %>%
     names_to = "Day",
     values_to = "value"
 )
+
+#If matricide, change NAs to 0 (these were incorrectly input)
+mut_long$value <- ifelse(mut_long$Matricide == 1 & is.na(mut_long$value), 0, mut_long$value)
 
 mut_long$Day <- as.factor(mut_long$Day)
 str(mut_long)
@@ -503,38 +508,34 @@ N2 <- mut_long %>%
 mut_long <- mut_long %>%
   unite(Tr_str, c('Treatment','Strain'), remove= F)
 
-mut_long$Tr_str <- factor(mut_long$Tr_str, levels = c("ev_N2", "daf_N2", "ev_SKN", "daf_SKN"))
+mut_long$Tr_str <- factor(mut_long$Tr_str, levels = c("ev_N2", "daf_N2", "ev_SKN", "daf_SKN", 'ev_DAF16', 'daf_DAF16'))
 
+levels(mut_long$Tr_str)
 
+# Total reproduction
 totalrep<-na.omit(as.data.frame.table(tapply(mut_long$value,list(mut_long$Tr_str, mut_long$ID),sum)))
-
-
 
 names(totalrep)<-c("Treatment", "Replicate", "Totrep")
 
 
-Totrep <-
+Totrep_dab <-
   totalrep %>%
   load(Treatment, Totrep,
-         idx = c('ev_N2', 'daf_N2', 'ev_SKN','daf_SKN'))
+         idx = c('ev_N2', 'daf_N2', 'ev_SKN','daf_SKN', 'ev_DAF16','daf_DAF16'))
 
-LRS <- dabest_plot(mean_diff(Totrep),
-            #color.column = Treatment, #this remove the legend - make sure colours are correct though
-         axes.title.fontsize=13, 
-            rawplot.ylabel="Total reproduction", effsize.ylabel = "Mean difference", rawplot.markersize=2, tick.fontsize=9)
 
-LRS
-Totrep <-
-  totalrep %>%
-  dabest(Treatment, Totrep,
-         idx = c('ev_N2','daf_N2', 'ev_SKN', 'daf_SKN','ev_DAF16','daf_DAF16'))
+LRS_mut <- dabest_plot(mean_diff(Totrep_dab), FALSE, swarm_label = 'LRS', raw_marker_spread = 1, custom_palette = 'npg', swarm_x_text = 12, swarm_y_text = 16, contrast_y_text = 16, contrast_x_text = 12, raw_marker_alpha = 0.3, tufte_size = 1)
+LRS_mut
 
-LRS <- plot(mean_diff(Totrep),
-          #color.column = Treatment, #this remove the legend - make sure colours are correct though
-          axes.title.fontsize=13, 
-          rawplot.ylabel="Total reproduction", effsize.ylabel = "Mean difference", rawplot.markersize=2, tick.fontsize=9)
+```
 
-LRS
+
+
+# Individual strains
+
+
+#SKN-1 mutant
+```{r}
 
  SKN_rep <-ggplot(data=SKN, aes(x=factor(Day), y=value, group=Treatment, color=Treatment))+
   geom_jitter(alpha = 0.2, position = position_jitterdodge(jitter.width = 0.2, dodge.width = 0.5))+
@@ -542,18 +543,18 @@ LRS
   stat_summary(fun.data="mean_cl_boot", geom="point", size = 3, position = position_dodge(0.5)) +
   stat_summary(fun.data="mean_cl_boot", geom="line",  size=1, position = position_dodge(0.5)) +
   theme_classic()+
-  labs(y="Offspring number", x="Day", size=20)+
+  labs(y="Offspring number", x="Day", size=16)+
   labs(col="")+
-  theme(axis.title.y = element_text(size=14))+
-  theme(axis.title.x = element_text(size=14))+
-  scale_color_manual(values=c('deepskyblue4','darkorange2'))+
+  theme(axis.title.y = element_text(size=16),
+        axis.text.y = element_text(size = 12))+
+  theme(axis.title.x = element_text(size=16), 
+        axis.text.x = element_text(size = 12))+
+  scale_color_manual(values=c('#4DBBD5FF','#E64B35FF'))+
   theme(legend.key.width = unit(0.5,"cm"))+
-  coord_cartesian(ylim = c(0,85))+
+  coord_cartesian(ylim = c(0,70))+
   theme(legend.position = c(0.8,0.9))
 
 SKN_rep
-
-
 
 SKN_wide <- spread(SKN, Day, value)
 
@@ -585,20 +586,46 @@ Data$Lambda<-as.numeric(as.character(Data$Lambda))
 
 Lambda_SKN <-
   Data %>%
-  dabest(Treatment, Lambda,
+  load(Treatment, Lambda,
          idx = list(c("ev", "daf")))
 
-vector<-c('deepskyblue4','darkorange2')
-
-
 ## Lambda dabestr plot
-
-Lambda_plot_SKN <- plot(mean_diff(Lambda_SKN),
-     #color.column = Treatment,
-     palette = c('darkorange2','deepskyblue4'), axes.title.fontsize=13, 
-                 rawplot.ylabel="Fitness", effsize.ylabel = "", rawplot.markersize=2, tick.fontsize=9)
+Lambda_plot_SKN <- dabest_plot(mean_diff(Lambda_SKN), FALSE, swarm_label = 'Lambda', raw_marker_spread = 1, custom_palette = 'npg', swarm_x_text = 12, swarm_y_text = 16, contrast_y_text = 16, contrast_x_text = 12, raw_marker_alpha = 0.3, tufte_size = 1)
 
 Lambda_plot_SKN
+
+
+
+# LRS
+totalrep<-na.omit(as.data.frame.table(tapply(SKN$value,list(SKN$Treatment, SKN$ID),sum)))
+
+names(totalrep)<-c("Treatment", "Replicate", "Totrep")
+
+Totrep <-
+  totalrep %>%
+  load(Treatment, Totrep,
+         idx = c('ev','daf'))
+
+Totrep_dab <- mean_diff(Totrep)
+
+LRS_SKN <- dabest_plot(Totrep_dab, FALSE, swarm_label = 'LRS', raw_marker_spread = 1, custom_palette = 'npg', swarm_x_text = 12, swarm_y_text = 16, contrast_y_text = 16, contrast_x_text = 12, raw_marker_alpha = 0.3, tufte_size = 1)
+LRS_SKN
+
+SKN_repro <- ggarrange(SKN_rep, 
+          ggarrange(Lambda_plot_SKN, LRS_SKN, ncol = 2),
+          nrow = 2)
+
+SKN_repro
+
+ggsave('SKN_rep.pdf', plot = SKN_repro,
+       width = 10, height = 10, units = 'in')
+
+```
+
+
+#DAF-16 mutant
+
+```{r}
 
  DAF16_rep <-ggplot(data=DAF16, aes(x=factor(Day), y=value, group=Treatment, color=Treatment))+
   geom_jitter(alpha = 0.2, position = position_jitterdodge(jitter.width = 0.2, dodge.width = 0.5))+
@@ -606,40 +633,19 @@ Lambda_plot_SKN
   stat_summary(fun.data="mean_cl_boot", geom="point", size = 3, position = position_dodge(0.5)) +
   stat_summary(fun.data="mean_cl_boot", geom="line",  size=1, position = position_dodge(0.5)) +
   theme_classic()+
-  labs(y="Offspring number", x="Day", size=20)+
+  labs(y="Offspring number", x="Day", size=16)+
   labs(col="")+
-  theme(axis.title.y = element_text(size=14))+
-  theme(axis.title.x = element_text(size=14))+
-  scale_color_manual(values=c('deepskyblue4','darkorange2'))+
+  theme(axis.title.y = element_text(size=16),
+        axis.text.y = element_text(size = 12))+
+  theme(axis.title.x = element_text(size=16),
+        axis.text.x = element_text(size = 12))+
+  scale_color_manual(values=c('#4DBBD5FF','#E64B35FF'))+
   theme(legend.key.width = unit(0.5,"cm"))+
   coord_cartesian(ylim = c(0,85))+
   theme(legend.position = c(0.8,0.9))
  
- 
- 
- 
- 
-
 DAF16_rep
 
-
- N2_rep <-ggplot(data=N2, aes(x=factor(Day), y=value, group=Treatment, color=Treatment))+
-  geom_jitter(alpha = 0.2, position = position_jitterdodge(jitter.width = 0.2, dodge.width = 0.5))+
-  stat_summary(fun.data="mean_cl_boot", geom="errorbar", size = 1, width=0.0, position = position_dodge(0.5)) +
-  stat_summary(fun.data="mean_cl_boot", geom="point", size = 3, position = position_dodge(0.5)) +
-  stat_summary(fun.data="mean_cl_boot", geom="line",  size=1, position = position_dodge(0.5)) +
-  theme_classic()+
-  labs(y="Offspring number", x="Day", size=20)+
-  labs(col="")+
-  theme(axis.title.y = element_text(size=14))+
-  theme(axis.title.x = element_text(size=14))+
-  scale_color_manual(values=c('deepskyblue4','darkorange2'))+
-  theme(legend.key.width = unit(0.5,"cm"))+
-  coord_cartesian(ylim = c(0,85))+
-  theme(legend.position = c(0.8,0.9))
- 
- N2_rep
- 
 
 DAF16_wide <- spread(DAF16, Day, value)
 
@@ -671,43 +677,71 @@ Data$Lambda<-as.numeric(as.character(Data$Lambda))
 
 Lambda_DAF16 <-
   Data %>%
-  dabest(Treatment, Lambda,
+  load(Treatment, Lambda,
          idx = list(c("ev", "daf")))
 
-vector<-c('deepskyblue4','darkorange2')
-
-
 ## Lambda dabestr plot
-
-Lambda_plot_DAF16 <- plot(mean_diff(Lambda_DAF16),
-     #color.column = Treatment,
-     palette = c('darkorange2','deepskyblue4'), axes.title.fontsize=13, 
-                 rawplot.ylabel="Fitness", effsize.ylabel = "", rawplot.markersize=2, tick.fontsize=9)
+Lambda_plot_DAF16 <- dabest_plot(mean_diff(Lambda_DAF16), FALSE, swarm_label = 'Lambda', raw_marker_spread = 1, custom_palette = 'npg', swarm_x_text = 12, swarm_y_text = 16, contrast_y_text = 16, contrast_x_text = 12, raw_marker_alpha = 0.3, tufte_size = 1)
 
 Lambda_plot_DAF16
- 
- 
 
 
-rep <- ggplot(data=mut_long, aes(x=factor(Day), y=value, group = Tr_str, color=Strain))+
-  geom_jitter(alpha = 0.2, position = position_jitterdodge(jitter.width = 0.1, dodge.width = 0.6))+
-  stat_summary(fun.data="mean_cl_boot", geom="errorbar", size = 1, width=0.0, position = position_dodge(0.6)) +
-  stat_summary(fun.data="mean_cl_boot", geom="point", size = 3, position = position_dodge(0.6)) +
-  stat_summary(fun.data="mean_cl_boot", geom="line",  size=1, position = position_dodge(0.6), aes(linetype = Treatment)) +
+
+
+# LRS
+totalrep<-na.omit(as.data.frame.table(tapply(DAF16$value,list(DAF16$Treatment, DAF16$ID),sum)))
+
+names(totalrep)<-c("Treatment", "Replicate", "Totrep")
+
+Totrep <-
+  totalrep %>%
+  load(Treatment, Totrep,
+         idx = c('ev','daf'))
+
+Totrep_dab <- mean_diff(Totrep)
+
+LRS_DAF16 <- dabest_plot(Totrep_dab, FALSE, swarm_label = 'LRS', raw_marker_spread = 1, custom_palette = 'npg', swarm_x_text = 12, swarm_y_text = 16, contrast_y_text = 16, contrast_x_text = 12, raw_marker_alpha = 0.3, tufte_size = 1)
+LRS_DAF16
+
+DAF16_repro <- ggarrange(DAF16_rep, 
+          ggarrange(Lambda_plot_DAF16, LRS_DAF16, ncol = 2),
+          nrow = 2)
+
+DAF16_repro
+
+ggsave('DAF16_rep.pdf', plot = DAF16_repro,
+       width = 10, height = 10, units = 'in')
+
+```
+
+
+# N2
+
+```{r}
+
+N2_rep <-ggplot(data=N2, aes(x=factor(Day), y=value, group=Treatment, color=Treatment))+
+  geom_jitter(alpha = 0.2, position = position_jitterdodge(jitter.width = 0.2, dodge.width = 0.5))+
+  stat_summary(fun.data="mean_cl_boot", geom="errorbar", size = 1, width=0.0, position = position_dodge(0.5)) +
+  stat_summary(fun.data="mean_cl_boot", geom="point", size = 3, position = position_dodge(0.5)) +
+  stat_summary(fun.data="mean_cl_boot", geom="line",  size=1, position = position_dodge(0.5)) +
   theme_classic()+
-  labs(y="Offspring number", x="Day", size=20)+
+  labs(y="Offspring number", x="Day", size=16)+
   labs(col="")+
-  theme(axis.title.y = element_text(size=14))+
-  theme(axis.title.x = element_text(size=14))+
+  theme(axis.title.y = element_text(size=16),
+        axis.text.y = element_text(size = 12))+
+  theme(axis.title.x = element_text(size=16),
+        axis.text.x = element_text(size = 12))+
+  scale_color_manual(values=c('#4DBBD5FF','#E64B35FF'))+
   theme(legend.key.width = unit(0.5,"cm"))+
-  scale_color_manual(values = c('deepskyblue4','darkorange2','goldenrod'))+
   coord_cartesian(ylim = c(0,85))+
   theme(legend.position = c(0.8,0.9))
-rep
-
-
-
-N2_wide <- spread(N2, Day, value)
+ 
+ N2_rep
+ 
+ 
+ 
+#Format data for Leslie matrix calculations 
+ N2_wide <- spread(N2, Day, value)
 
 within(N2_wide, rm(Strain))
 ## Calculate lambda
@@ -727,8 +761,6 @@ for (i in 1:nrow(N2_wide)){
   
 }
 
-
-
 colnames(L)<-c("Treatment", "ID", "Lambda")
 
 Data<-as.data.frame(L)
@@ -737,23 +769,65 @@ Data$Lambda<-as.numeric(as.character(Data$Lambda))
 
 Lambda_N2 <-
   Data %>%
-  dabest(Treatment, Lambda,
+  load(Treatment, Lambda,
          idx = list(c("ev", "daf")))
-
-Lambda_N2
-
-vector<-c('deepskyblue4','darkorange2')
 
 
 ## Lambda dabestr plot
+Lambda_plot_N2 <- dabest_plot(mean_diff(Lambda_N2), FALSE, swarm_label = 'Lambda', raw_marker_spread = 1, custom_palette = 'npg', swarm_x_text = 12, swarm_y_text = 16, contrast_y_text = 16, contrast_x_text = 12, raw_marker_alpha = 0.3, tufte_size = 1)
 
-Lambda_plot_N2 <- plot(mean_diff(Lambda_N2),
-     #color.column = Treatment,
-     palette = c('darkorange2','deepskyblue4'), axes.title.fontsize=13, 
-                 rawplot.ylabel="Fitness", effsize.ylabel = "", rawplot.markersize=2, tick.fontsize=9)
+Lambda_plot_N2
 
 Lambda_plot_N2 + Lambda_plot_DAF16+Lambda_plot_SKN
 
+
+
+# LRS
+totalrep<-na.omit(as.data.frame.table(tapply(N2$value,list(N2$Treatment, N2$ID),sum)))
+
+names(totalrep)<-c("Treatment", "Replicate", "Totrep")
+
+Totrep <-
+  totalrep %>%
+  load(Treatment, Totrep,
+         idx = c('ev','daf'))
+
+Totrep_dab <- mean_diff(Totrep)
+
+LRS_N2 <- dabest_plot(Totrep_dab, FALSE, swarm_label = 'LRS', raw_marker_spread = 1, custom_palette = 'npg', swarm_x_text = 12, swarm_y_text = 16, contrast_y_text = 16, contrast_x_text = 12, raw_marker_alpha = 0.3, tufte_size = 1)
+LRS_N2
+
+N2_repro <- ggarrange(N2_rep, 
+          ggarrange(Lambda_plot_N2, LRS_N2, ncol = 2),
+          nrow = 2)
+
+N2_repro
+
+ggsave('N2_rep.pdf', plot = N2_repro,
+       width = 10, height = 10, units = 'in')
+
+ 
+```
+ 
+ 
+# All strains plotted together
+```{r}
+
+rep <- ggplot(data=mut_long, aes(x=factor(Day), y=value, group = Tr_str, color=Strain))+
+  geom_jitter(alpha = 0.2, position = position_jitterdodge(jitter.width = 0.1, dodge.width = 0.6))+
+  stat_summary(fun.data="mean_cl_boot", geom="errorbar", size = 1, width=0.0, position = position_dodge(0.6)) +
+  stat_summary(fun.data="mean_cl_boot", geom="point", size = 3, position = position_dodge(0.6)) +
+  stat_summary(fun.data="mean_cl_boot", geom="line",  size=1, position = position_dodge(0.6), aes(linetype = Treatment)) +
+  theme_classic()+
+  labs(y="Offspring number", x="Day", size=20)+
+  labs(col="")+
+  theme(axis.title.y = element_text(size=14))+
+  theme(axis.title.x = element_text(size=14))+
+  theme(legend.key.width = unit(0.5,"cm"))+
+  scale_color_manual(values = c('deepskyblue4','darkorange2','goldenrod'))+
+  coord_cartesian(ylim = c(0,85))+
+  theme(legend.position = c(0.8,0.9))
+rep
 
 ```
 
