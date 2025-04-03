@@ -107,10 +107,9 @@ ad_long_ev <- subset(adult_long, Treatment == 'ev')
 
 ```
 
+# Reproduction
 
-
-##### Plots for adult daf-2 reproduction
-
+## Adulthood only daf-2 reproduction
 ```{r}
 ## Age-specific reproduction plot
 
@@ -195,9 +194,7 @@ ggsave('all_adult_rep.pdf', plot = adult_repro,
 
 ```
 
-
-# Developmental daf-2 RNAi reproduction
-
+## Developmental daf-2 only reproduction
 ```{r}
 ## Age-specific reproduction plots
 
@@ -283,8 +280,9 @@ ggsave('all_dev_rep.pdf', plot = dev_repro,
 
 ```
 
+#Lifespan
 
-# Adult daf-2 lifespan
+## Adulthood only daf-2 lifespan
 ```{r}
 
 class(adult_ls$Treatment_ID)
@@ -375,9 +373,7 @@ LS_all_plot
 ggsave('BristolLS_adult_plot.pdf', height = 8, width = 12)
 ```
 
-
-# Dev daf-2 LS
-
+## Developmental daf-2 only lifespan
 ```{r}
 
 class(dev_ls$Treatment_ID)
@@ -469,13 +465,12 @@ ggsave('BristolLS_dev_plot.pdf', height = 8, width = 12)
 
 ```
 
+# Mutant Strains 
 
-# N2s + SKN-1 and DAF-16 Mutants - Reproduction
+## N2s + SKN-1 and DAF-16 Mutants - format data
 ```{r}
 
 repro_mut <- read.csv('Bristol_repro_mut.csv')
-
-
 
 mut_long <- repro_mut %>% 
   pivot_longer(
@@ -512,29 +507,19 @@ mut_long$Tr_str <- factor(mut_long$Tr_str, levels = c("ev_N2", "daf_N2", "ev_SKN
 
 levels(mut_long$Tr_str)
 
-# Total reproduction
-totalrep<-na.omit(as.data.frame.table(tapply(mut_long$value,list(mut_long$Tr_str, mut_long$ID),sum)))
-
-names(totalrep)<-c("Treatment", "Replicate", "Totrep")
-
-
-Totrep_dab <-
-  totalrep %>%
-  load(Treatment, Totrep,
-         idx = c('ev_N2', 'daf_N2', 'ev_SKN','daf_SKN', 'ev_DAF16','daf_DAF16'))
+levels(mut_LS$Treatment)
+levels(mut_LS$Treatment) <- c('daf-2','ev')
+levels(mut_LS$Treatment)
+mut_LS$Treatment <- as.factor(mut_LS$Treatment)
+mut_LS$Treatment <- relevel(mut_LS$Treatment, "ev")
 
 
-LRS_mut <- dabest_plot(mean_diff(Totrep_dab), FALSE, swarm_label = 'LRS', raw_marker_spread = 1, custom_palette = 'npg', swarm_x_text = 12, swarm_y_text = 16, contrast_y_text = 16, contrast_x_text = 12, raw_marker_alpha = 0.3, tufte_size = 1)
-LRS_mut
 
 ```
 
+# Individual mutant strains
 
-
-# Individual strains
-
-
-#SKN-1 mutant
+##SKN-1 mutant reproduction and lifespan
 ```{r}
 
  SKN_rep <-ggplot(data=SKN, aes(x=factor(Day), y=value, group=Treatment, color=Treatment))+
@@ -620,11 +605,52 @@ SKN_repro
 ggsave('SKN_rep.pdf', plot = SKN_repro,
        width = 10, height = 10, units = 'in')
 
+
+#### LIFESPAN
+
+SKN_LS <- mut_LS %>%
+  filter(Strain == 'SKN')
+
+
+levels(SKN_LS$Treatment)
+SKN_LS$Treatment <- relevel(SKN_LS$Treatment, "ev")
+levels(SKN_LS$Treatment)
+
+
+surv<-survfit(Surv(Age,Event)~Treatment,data=SKN_LS)
+
+SKN_LS_plot <-ggsurvplot(surv, ylab="Survival probability\n", data = SKN_LS, size= 0.8, font.ylab= 18, font.xlab= 18, legend = c(0.8, 0.8), legend.labs = c( "ev", "daf-2"), 
+legend.title = "", title = "", censor = FALSE, xlab = "\nDay", xlim=c(0,55), break.time.by = 5, position= position_dodge(0.9), font.tickslab = c(14), font.legend = c(16))
+
+SKN_LS_plot
+
+#Censor matricides
+SKN_LS_matcen <- SKN_LS %>%
+  filter(Cause != 'M')
+
+surv<-survfit(Surv(Age,Event)~Treatment,data=SKN_LS_matcen)
+
+SKN_LS_matcen_plot <-ggsurvplot(surv, ylab="Survival probability\n", data = SKN_LS_matcen, size= 0.8, font.ylab= 18, font.xlab= 18, legend = c(0.8, 0.8), legend.labs = c( "ev", "daf-2"),  legend.title = "", title = "", censor = FALSE, xlab = "\nDay", xlim=c(0,55), break.time.by = 5, position= position_dodge(0.9), font.tickslab = c(14), font.legend = c(16))
+SKN_LS_matcen_plot
+
+cox_SKN <- coxme(Surv(Age, Event) ~ Treatment + (1|Plate.ID), data = SKN_LS)
+
+forest_SKN <- meforest(cox_SKN, 'ev')
+forest_SKN
+
+cox_SKN_matcen <- coxme(Surv(Age, Event) ~ Treatment + (1|Plate.ID), data = SKN_LS_matcen)
+
+forest_SKN_matcen <- meforest(cox_SKN_matcen, 'ev')
+forest_SKN_matcen
+
+SKN_LS_all_plot <- ggarrange(SKN_LS_plot$plot, SKN_LS_matcen_plot$plot, forest_SKN, forest_SKN_matcen, nrow = 2, ncol = 2,heights = c(2, 1), labels = c('A', 'B'))
+SKN_LS_all_plot
+ggsave('BristolLS_SKN_LS_plot.pdf', height = 8, width = 12)
+
+
 ```
 
-
-#DAF-16 mutant
-
+##DAF-16 mutant
 ```{r}
 
  DAF16_rep <-ggplot(data=DAF16, aes(x=factor(Day), y=value, group=Treatment, color=Treatment))+
@@ -714,9 +740,7 @@ ggsave('DAF16_rep.pdf', plot = DAF16_repro,
 
 ```
 
-
-# N2
-
+## N2
 ```{r}
 
 N2_rep <-ggplot(data=N2, aes(x=factor(Day), y=value, group=Treatment, color=Treatment))+
@@ -809,8 +833,7 @@ ggsave('N2_rep.pdf', plot = N2_repro,
  
 ```
  
- 
-# All strains plotted together
+## All strains plotted together
 ```{r}
 
 rep <- ggplot(data=mut_long, aes(x=factor(Day), y=value, group = Tr_str, color=Strain))+
@@ -829,145 +852,20 @@ rep <- ggplot(data=mut_long, aes(x=factor(Day), y=value, group = Tr_str, color=S
   theme(legend.position = c(0.8,0.9))
 rep
 
-```
-
-
-##Grouping datasets
-
-```{r}
-fin <- read.csv('Finn_data.csv')
-repro <- read.csv('Bristol_adult.csv')
-repro2 <- read.csv('Bristol_repro_mut.csv')
-
-str(fin)
-fin$infection <- NULL
-fin$matracide <- NULL
-fin$strain_treat <- NULL
-str(fin)
-
-str(repro)
-
-str(repro2)
-repro2$D11 <- NULL
-repro2$D12 <- NULL
-repro2$D13 <- NULL
-repro2$D14 <- NULL
-repro2$D15 <- NULL
-str(repro2)
-
-
-all<- rbind(fin, repro, repro2)
-#Add individual ID - since ID numbers overlap across datasets
-all <- tibble::rowid_to_column(all, "ID_ind")
-
-all <- all%>%
-  unite(Tr_str, c('Treatment','Strain'), remove= F)
-
-```
-
-
-##Plots for combined data
-
-```{r}
-
-#Get data in long form
-all_long <- all %>% 
-  pivot_longer(
-    cols = `D1`:`D10`, 
-    names_to = "Day",
-    values_to = "value"
-)
-
-#Change Day to a factor so I can change levels to numeric values
-all_long$Day <- as.factor(all_long$Day)
-
-#Give levels for Day a numeric value
-levels(all_long$Day) <- list('1' = 'D1', '2' = 'D2', '3' = 'D3', '4' = 'D4', '5' = 'D5', '6' = 'D6', '7' = 'D7', '8' = 'D8', '9' = 'D9', '10' = 'D10')
-
-#Change class to numeric
-all_long$Day <- as.numeric(all_long$Day)
-
-#Get only N2s 
-N2_all <- all_long %>%
-  filter(Strain == 'N2')
-
-###Need to exclude Lucas' data - not sure if he swapped mutants around
-N2_all <- N2_all %>%
-  filter(N2_all$Counter != 'lucas')
-
- N2_rep <-ggplot(data=N2_all, aes(x=factor(Day), y=value, group=Treatment, color=Treatment))+
-  geom_jitter(alpha = 0.2, position = position_jitterdodge(jitter.width = 0.2, dodge.width = 0.5))+
-  stat_summary(fun.data="mean_cl_boot", geom="errorbar", size = 1, width=0.0, position = position_dodge(0.5)) +
-  stat_summary(fun.data="mean_cl_boot", geom="point", size = 3, position = position_dodge(0.5)) +
-  stat_summary(fun.data="mean_cl_boot", geom="line",  size=1, position = position_dodge(0.5)) +
-  theme_classic()+
-  labs(y="Offspring number", x="Day", size=20)+
-  labs(col="")+
-  theme(axis.title.y = element_text(size=14))+
-  theme(axis.title.x = element_text(size=14))+
-  scale_color_manual(values=c('deepskyblue4','darkorange2'))+
-  theme(legend.key.width = unit(0.5,"cm"))+
-  coord_cartesian(ylim = c(0,85))+
-  theme(legend.position = c(0.8,0.9))
- 
- N2_rep
- 
-#Spread data back out
-N2_wide <- spread(N2_all, Day, value)
-within(N2_wide, rm(Strain))
-
-N2_wide <- na.omit(N2_wide)
-
-## Calculate lambda
-L <- matrix(nrow = nrow(N2_wide), ncol = 3)
-
-for (i in 1:nrow(N2_wide)){
-  Les <- matrix(0, ncol = 9, nrow = 9)
-  diag(Les[-1,]) <- rep(1, 8) # add the 1s for survival probability diagonally
-  Fert <- c(0,0, as.numeric(as.vector(N2_wide[i,][4:10]))) #the columns in data that has the reproductive counts
-  Fert[is.na(Fert)] <- 0 #makes all NAs into 0s
-  Les[1,] <- c(Fert)
-  class(Les) <- "leslie.matrix"
-  Lambda <- popbio::eigen.analysis(Les)$lambda1
-  L[i, 1:3] <- c(paste0(N2_wide$Treatment[i]), paste0(N2_wide$ID[i]), Lambda)
-  
-}
-
-
-colnames(L)<-c("Treatment", "ID", "Lambda")
-
-Data<-as.data.frame(L)
-
-Data$Lambda<-as.numeric(as.character(Data$Lambda))
-
-Lambda_N2 <-
-  Data %>%
-  dabest(Treatment, Lambda,
-         idx = list(c("ev", "daf")))
-
-## Lambda dabestr plot
-Lambda_plot_N2 <- plot(mean_diff(Lambda_N2),
-     #color.column = Treatment,
-     palette = c('darkorange2','deepskyblue4'), axes.title.fontsize=13, 
-                 rawplot.ylabel="Fitness", effsize.ylabel = '', rawplot.markersize=2, tick.fontsize = 9)
-
-Lambda_plot_N2
-
-### LRS
-
-totalrep<-na.omit(as.data.frame.table(tapply(N2_all$value,list(N2_all$Treatment, N2_all$ID_ind),sum)))
-
+# Total reproduction
+totalrep<-na.omit(as.data.frame.table(tapply(mut_long$value,list(mut_long$Tr_str, mut_long$ID),sum)))
 
 names(totalrep)<-c("Treatment", "Replicate", "Totrep")
 
-Totrep <-
-  totalrep %>%
-  dabest(Treatment, Totrep,
-         idx = c('ev','daf'))
 
-LRS <- plot(mean_diff(Totrep), palette = c('darkorange2','deepskyblue4'),
-          #color.column = Treatment, #this remove the legend - make sure colours are correct though
-          axes.title.fontsize=13, 
-          rawplot.ylabel="Total reproduction", effsize.ylabel = "Mean difference", rawplot.markersize=2, tick.fontsize=9)
-LRS
+Totrep_dab <-
+  totalrep %>%
+  load(Treatment, Totrep,
+         idx = c('ev_N2', 'daf_N2', 'ev_SKN','daf_SKN', 'ev_DAF16','daf_DAF16'))
+
+
+LRS_mut <- dabest_plot(mean_diff(Totrep_dab), FALSE, swarm_label = 'LRS', raw_marker_spread = 1, custom_palette = 'npg', swarm_x_text = 12, swarm_y_text = 16, contrast_y_text = 16, contrast_x_text = 12, raw_marker_alpha = 0.3, tufte_size = 1)
+LRS_mut
+
 ```
+
