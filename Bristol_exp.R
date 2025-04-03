@@ -460,7 +460,7 @@ Forest_matcen
 
 
 LS_dev_all_plot <- ggarrange(dev_lifespan$plot, dev_lifespan_matcen$plot, ForestAll, Forest_matcen, nrow = 2, ncol = 2,heights = c(2, 1), labels = c('A', 'B'))
-LS_all_plot
+LS_dev_all_plot
 ggsave('BristolLS_dev_plot.pdf', height = 8, width = 12)
 
 ```
@@ -645,7 +645,7 @@ forest_SKN_matcen
 
 SKN_LS_all_plot <- ggarrange(SKN_LS_plot$plot, SKN_LS_matcen_plot$plot, forest_SKN, forest_SKN_matcen, nrow = 2, ncol = 2,heights = c(2, 1), labels = c('A', 'B'))
 SKN_LS_all_plot
-ggsave('BristolLS_SKN_LS_plot.pdf', height = 8, width = 12)
+ggsave('BristolSKN_LS_plot.pdf', height = 8, width = 12)
 
 
 ```
@@ -737,6 +737,47 @@ DAF16_repro
 
 ggsave('DAF16_rep.pdf', plot = DAF16_repro,
        width = 10, height = 10, units = 'in')
+
+#### LIFESPAN
+
+DAF16_LS <- mut_LS %>%
+  filter(Strain == 'DAF16')
+
+
+levels(DAF16_LS$Treatment)
+DAF16_LS$Treatment <- relevel(DAF16_LS$Treatment, "ev")
+levels(DAF16_LS$Treatment)
+
+
+surv<-survfit(Surv(Age,Event)~Treatment,data=DAF16_LS)
+
+DAF16_LS_plot <-ggsurvplot(surv, ylab="Survival probability\n", data = DAF16_LS, size= 0.8, font.ylab= 18, font.xlab= 18, legend = c(0.8, 0.8), legend.labs = c( "ev", "daf-2"), 
+legend.title = "", title = "", censor = FALSE, xlab = "\nDay", xlim=c(0,55), break.time.by = 5, position= position_dodge(0.9), font.tickslab = c(14), font.legend = c(16))
+
+DAF16_LS_plot
+
+#Censor matricides
+DAF16_LS_matcen <- DAF16_LS %>%
+  filter(Cause != 'M')
+
+surv<-survfit(Surv(Age,Event)~Treatment,data=DAF16_LS_matcen)
+
+DAF16_LS_matcen_plot <-ggsurvplot(surv, ylab="Survival probability\n", data = DAF16_LS_matcen, size= 0.8, font.ylab= 18, font.xlab= 18, legend = c(0.8, 0.8), legend.labs = c( "ev", "daf-2"),  legend.title = "", title = "", censor = FALSE, xlab = "\nDay", xlim=c(0,55), break.time.by = 5, position= position_dodge(0.9), font.tickslab = c(14), font.legend = c(16))
+DAF16_LS_matcen_plot
+
+cox_DAF16 <- coxme(Surv(Age, Event) ~ Treatment + (1|Plate.ID), data = DAF16_LS)
+
+forest_DAF16 <- meforest(cox_DAF16, 'ev')
+forest_DAF16
+
+cox_DAF16_matcen <- coxme(Surv(Age, Event) ~ Treatment + (1|Plate.ID), data = DAF16_LS_matcen)
+
+forest_DAF16_matcen <- meforest(cox_DAF16_matcen, 'ev')
+forest_DAF16_matcen
+
+DAF16_LS_all_plot <- ggarrange(DAF16_LS_plot$plot, DAF16_LS_matcen_plot$plot, forest_DAF16, forest_DAF16_matcen, nrow = 2, ncol = 2,heights = c(2, 1), labels = c('A', 'B'))
+DAF16_LS_all_plot
+ggsave('BristolDAF16_LS_plot.pdf', height = 8, width = 12)
 
 ```
 
@@ -830,6 +871,46 @@ N2_repro
 ggsave('N2_rep.pdf', plot = N2_repro,
        width = 10, height = 10, units = 'in')
 
+#### LIFESPAN
+
+N2_LS <- mut_LS %>%
+  filter(Strain == 'N2')
+
+
+levels(N2_LS$Treatment)
+N2_LS$Treatment <- relevel(N2_LS$Treatment, "ev")
+levels(N2_LS$Treatment)
+
+
+surv<-survfit(Surv(Age,Event)~Treatment,data=N2_LS)
+
+N2_LS_plot <-ggsurvplot(surv, ylab="Survival probability\n", data = N2_LS, size= 0.8, font.ylab= 18, font.xlab= 18, legend = c(0.9, 0.9), legend.labs = c( "ev", "daf-2"), 
+legend.title = "", title = "", censor = FALSE, xlab = "\nDay", xlim=c(0,85), break.time.by = 10, position= position_dodge(0.9), font.tickslab = c(14), font.legend = c(16))
+
+N2_LS_plot
+
+#Censor matricides
+N2_LS_matcen <- N2_LS %>%
+  filter(Cause != 'M')
+
+surv<-survfit(Surv(Age,Event)~Treatment,data=N2_LS_matcen)
+
+N2_LS_matcen_plot <-ggsurvplot(surv, ylab="Survival probability\n", data = N2_LS_matcen, size= 0.8, font.ylab= 18, font.xlab= 18, legend = c(0.9, 0.9), legend.labs = c( "ev", "daf-2"),  legend.title = "", title = "", censor = FALSE, xlab = "\nDay", xlim=c(0,85), break.time.by = 10, position= position_dodge(0.9), font.tickslab = c(14), font.legend = c(16))
+N2_LS_matcen_plot
+
+cox_N2 <- coxme(Surv(Age, Event) ~ Treatment + (1|Plate.ID), data = N2_LS)
+
+forest_N2 <- meforest(cox_N2, 'ev')
+forest_N2
+
+cox_N2_matcen <- coxme(Surv(Age, Event) ~ Treatment + (1|Plate.ID), data = N2_LS_matcen)
+
+forest_N2_matcen <- meforest(cox_N2_matcen, 'ev')
+forest_N2_matcen
+
+N2_LS_all_plot <- ggarrange(N2_LS_plot$plot, N2_LS_matcen_plot$plot, forest_N2, forest_N2_matcen, nrow = 2, ncol = 2,heights = c(2, 1), labels = c('A', 'B'))
+N2_LS_all_plot
+ggsave('BristolN2_LS_plot.pdf', height = 8, width = 12)
  
 ```
  
