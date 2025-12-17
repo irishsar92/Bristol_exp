@@ -296,6 +296,7 @@ Anova(lambda_m1, type = 'II')
 N2_LS <- mut_LS %>%
   filter(Strain == 'N2')
 
+
 #create survival object for N2
 surv<-survfit(Surv(Age,Event)~Treatment,data=N2_LS)
 
@@ -585,6 +586,7 @@ SKN_LS_plot
 SKN_LS_matcen <- SKN_LS %>%
   filter(Cause != 'M')
 
+
 #create survival object
 surv<-survfit(Surv(Age,Event)~Treatment,data=SKN_LS_matcen)
 
@@ -806,6 +808,7 @@ summary(lambda_m1)
 #get DAF16 only
 DAF16_LS <- mut_LS %>%
   filter(Strain == 'DAF16')
+
 
 #create survival object
 surv<-survfit(Surv(Age,Event)~Treatment,data=DAF16_LS)
