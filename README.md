@@ -1,5 +1,6 @@
 Cost-free lifespan extension through reduced adulthood insulin-signalling is robust to natural environmental challenges
-Sara D. Irish*, Annabel Kimberley, Simone Immler, Alexei A. Maklakov
+--------------------------------------------------------------------------------------------------------------------------------
+Sara D. Irish*, Annabel Kimberley, Simone Immler, Alexei A. Maklakov <br>
 University of East Anglia, Norwich, UK
 *Corresponding author: s.irish@uea.ac.uk
 ---------------------------------------------------------------------------------------------------------------------------------
