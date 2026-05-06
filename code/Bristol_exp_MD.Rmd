@@ -29,21 +29,13 @@ suppressPackageStartupMessages({
   library(nloptr)
   library(dfoptim)
   library(data.table)
-  library(DHARMa)
   library(emmeans)
   library(ggpubr)
-  library(patchwork)
   library(lubridate)
-  library(performance)
-  library(dplyr)#to check overdispersion in glmmTMB models
   library(survival)
   library(coxme) #for cox model
-  library(purrr) #for forestplot
-  library(ggpubr) #for forestplot
-  library(survminer) #for forestplot
   library(AICcmodavg)
   library(forcats)
-  library(fields) #for thin plate spline plots
   library(usethis)
   library(gitcreds)
   library(httr2)
@@ -51,16 +43,15 @@ suppressPackageStartupMessages({
   library(Hmisc)
 })
 
-R.version
 
 #Lifespan data for N2s + daf-16 and skn-1 mutants
-mut_LS <- read.csv('Bristol_LS_mut.csv')
+mut_LS <- read.csv('data/Bristol_LS_mut.csv')
 
 #read in full reproduction dataset
-repro_mut <- read.csv('Bristol_repro_mut.csv')
+repro_mut <- read.csv('data/Bristol_repro_mut.csv')
 
 #read in temperature data
-temp <- read.csv('Bristol_temp.csv')
+temp <- read.csv('data/Bristol_temp.csv')
 
 
 
