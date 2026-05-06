@@ -59,6 +59,9 @@ mut_LS <- read.csv('Bristol_LS_mut.csv')
 #read in full reproduction dataset
 repro_mut <- read.csv('Bristol_repro_mut.csv')
 
+#read in temperature data
+temp <- read.csv('Bristol_temp.csv')
+
 
 
 #create level order for 10 days reproduction
@@ -131,13 +134,13 @@ N2_rep <-ggplot(data=N2, aes(x=factor(Day), y=value, group=Treatment, color=Trea
   labs(y="Offspring number", x="Day", size=13)+
   labs(col="")+
   labs(title = '    N2')+
-  theme(axis.title.y = element_text(size=13),
+  theme(axis.title.y = element_text(size=14),
         axis.text.y = element_text(size = 12))+
-  theme(axis.title.x = element_text(size=13),
+  theme(axis.title.x = element_text(size=14),
         axis.text.x = element_text(size = 12),
         title = element_text(size = 14))+
   theme(legend.text = element_text(size = 12))+
-  scale_color_manual(values=c('#E64B35FF','#4DBBD5FF'), labels = c('control',daf_label))+
+  scale_color_manual(values=c('#E64B35FF','#4DBBD5FF'), labels = c('ev',daf_label))+
   theme(legend.key.width = unit(0.5,"cm"))+
   coord_cartesian(ylim = c(0,85))+
   theme(legend.position = c(0.8,0.9))
@@ -301,7 +304,7 @@ N2_LS <- mut_LS %>%
 surv<-survfit(Surv(Age,Event)~Treatment,data=N2_LS)
 
 #survival plot
-N2_LS_plot <-ggsurvplot(surv, ylab="Survival probability", data = N2_LS, size= 0.8, font.ylab= 13, font.xlab= 13, legend = 'none', legend.labs = c( "control", "daf-2"), 
+N2_LS_plot <-ggsurvplot(surv, ylab="Survival probability", data = N2_LS, size= 0.8, font.ylab= 13, font.xlab= 13, legend = 'none', legend.labs = c( "ev", "daf-2"), 
 legend.title = "", title = "    N2", censor = FALSE, xlab = "Day", xlim=c(0,85), break.time.by = 10, position= position_dodge(0.9), font.tickslab = c(12))
 
 #add colours and labels
@@ -323,7 +326,7 @@ N2_LS_matcen_plot <-ggsurvplot(surv, ylab="Survival probability", data = N2_LS_m
 
 #add colours and labels
 N2_LS_matcen_plot <- N2_LS_matcen_plot$plot+
-  scale_colour_manual(labels = c('control',daf_label), , values = c('#E64B35FF','#4DBBD5FF'))
+  scale_colour_manual(labels = c('ev',daf_label), , values = c('#E64B35FF','#4DBBD5FF'))
 
 N2_LS_matcen_plot
 
@@ -376,6 +379,48 @@ plot(cox.zph(cox_N2))#analysis for this will be messy due to effects of matricid
 forest_N2 <- meforest(cox_N2, 'control')
 forest_N2
 
+#Use emmeans because of negligible effect of plate.ID
+N2_emm <- emmeans(cox_N2, ~ Treatment)  # EMMs of treatment 
+N2_emm
+
+#Get contrasts
+contrasts_N2 <- contrast(N2_emm, method = "revpairwise")
+
+#make a dataframe out of the contrast summary
+df_N2 <- as.data.frame(summary(contrasts_N2, infer = TRUE))
+
+# Rename columns
+names(df_N2)[names(df_N2) == "estimate"] <- "logHR"
+df_N2$HR <- exp(df_N2$logHR)
+df_N2$lower.HR <- exp(df_N2$asymp.LCL)
+df_N2$upper.HR <- exp(df_N2$asymp.UCL)
+
+#fix labels
+df_N2$Comparison <- df_N2$contrast
+
+#Create forest plot for differences of treatments within strains
+N2_contrasts <- ggplot(df_N2, aes(x = Comparison, y = logHR)) +
+  geom_point(size = 4, color = '#4DBBD5FF') +
+  geom_hline(yintercept = 0, linetype = "dashed", size = 1.2, color = '#E64B35FF', linewidth = 0.8) +
+  geom_errorbar(aes(ymin = asymp.LCL, ymax = asymp.UCL), width = 0.2, size = 1.1,color ='#4DBBD5FF')+
+  coord_flip() +
+  scale_x_discrete(labels = c(''))+
+  labs(
+    title = "",
+    x = "",
+    y = "Log hazard ratio (HR)"
+  ) +
+  theme_minimal(base_size = 12)+
+  theme(axis.text = element_text(size = 13),
+        axis.title = element_text(size = 14),
+      axis.line.x = ggplot2::element_line(color = "black", size = 0.5),
+      axis.line.y = ggplot2::element_line(color = "black", size = 0.5),
+        legend.position = 'none')
+
+N2_contrasts
+
+
+
 #Analysis with cox proportional hazards models - create forest plots with analysis
 cox_N2_matcen <- coxme(Surv(Age, Event) ~ Treatment + (1|Plate.ID), data = N2_LS_matcen)
 plot(cox.zph(cox_N2_matcen))#better than when matricides are excluded
@@ -383,14 +428,56 @@ cox.zph(cox_N2_matcen)#OK
 summary(cox_N2_matcen)
 
 #create forest plot from cox model with function
-forest_N2_matcox_N2forest_N2_matcen <- meforest(cox_N2_matcen, 'control')
+
+forest_N2_matcen <- meforest(cox_N2_matcen, 'control')
 forest_N2_matcen
 
+#Use emmeans because of negligible effect of plate.ID
+N2_NM_emm <- emmeans(cox_N2_matcen, ~ Treatment)  # EMMs of treatment 
+N2_NM_emm
+
+#Get contrasts
+contrasts_N2_NM <- contrast(N2_NM_emm, method = "revpairwise")
+
+#make a dataframe out of the contrast summary
+df_N2_NM <- as.data.frame(summary(contrasts_N2_NM, infer = TRUE))
+
+# Rename columns
+names(df_N2_NM)[names(df_N2_NM) == "estimate"] <- "logHR"
+df_N2_NM$HR <- exp(df_N2_NM$logHR)
+df_N2_NM$lower.HR <- exp(df_N2_NM$asymp.LCL)
+df_N2_NM$upper.HR <- exp(df_N2_NM$asymp.UCL)
+
+#fix labels
+df_N2_NM$Comparison <- df_N2_NM$contrast
+
+#Create forest plot for differences of treatments within strains
+N2_NM_contrasts <- ggplot(df_N2_NM, aes(x = Comparison, y = logHR)) +
+  geom_point(size = 4, color = '#4DBBD5FF') +
+  geom_hline(yintercept = 0, linetype = "dashed", size = 1.2, color = '#E64B35FF', linewidth = 0.8) +
+  geom_errorbar(aes(ymin = asymp.LCL, ymax = asymp.UCL), width = 0.2, size = 1.1,color ='#4DBBD5FF')+
+  coord_flip() +
+  scale_x_discrete(labels = c(''))+
+  labs(
+    title = "",
+    x = "",
+    y = "Log hazard ratio (HR)"
+  ) +
+  theme_minimal(base_size = 12)+
+  theme(axis.text = element_text(size = 13),
+        axis.title = element_text(size = 14),
+      axis.line.x = ggplot2::element_line(color = "black", size = 0.5),
+      axis.line.y = ggplot2::element_line(color = "black", size = 0.5),
+        legend.position = 'none')
+
+N2_NM_contrasts
+
+
 #Combine plots with and without matricides
-N2_mat_inc <- ggarrange(N2_LS_plot, forest_N2, nrow = 2, ncol = 1, heights = c(2,1), labels = c('A',''))
+N2_mat_inc <- ggarrange(N2_LS_plot, N2_contrasts+theme(plot.margin = margin(t = 0, r = 0.15, b = 0, l = 0.75, unit = "cm")), nrow = 2, ncol = 1, heights = c(2,1), labels = c('A','D'))
 N2_mat_inc
 
-N2_mat_exc <- ggarrange(N2_LS_matcen_plot, forest_N2_matcen, nrow = 2, ncol = 1, heights = c(2,1), labels = c('A',''))
+N2_mat_exc <- ggarrange(N2_LS_matcen_plot, N2_NM_contrasts+theme(plot.margin = margin(t = 0, r = 0.15, b = 0, l = 0.75, unit = "cm")), nrow = 2, ncol = 1, heights = c(2,1), labels = c('A','D'))
 N2_mat_exc
  
 ```
@@ -408,13 +495,13 @@ N2_mat_exc
   labs(y="Offspring number", x="Day", size=13)+
   labs(col="")+
   labs(title = skn1_label)+
-  theme(axis.title.y = element_text(size=13),
+  theme(axis.title.y = element_text(size=14),
         axis.text.y = element_text(size = 12))+
-  theme(axis.title.x = element_text(size=13), 
+  theme(axis.title.x = element_text(size=14), 
         axis.text.x = element_text(size = 12),
         legend.text = element_text(size = 12),
         title = element_text(size = 14))+
-  scale_color_manual(values=c('#E64B35FF','#4DBBD5FF'), labels = c('control',daf_label))+
+  scale_color_manual(values=c('#E64B35FF','#4DBBD5FF'), labels = c('ev',daf_label))+
   theme(legend.key.width = unit(0.5,"cm"))+
   coord_cartesian(ylim = c(0,70))+
   theme(legend.position = c(0.8,0.9))
@@ -573,12 +660,12 @@ SKN_LS <- mut_LS %>%
 surv<-survfit(Surv(Age,Event)~Treatment,data=SKN_LS)
 
 #survival plot
-SKN_LS_plot <-ggsurvplot(surv, ylab="Survival probability", data = SKN_LS, size= 0.8, font.ylab= 13, font.xlab= 13, legend = c(0.8, 0.8), legend.labs = c( "control", "daf-2"), 
+SKN_LS_plot <-ggsurvplot(surv, ylab="Survival probability", data = SKN_LS, size= 0.8, font.ylab= 13, font.xlab= 13, legend = c(0.8, 0.8), legend.labs = c( "ev", "daf-2"), 
 legend.title = "", title = skn1_label, censor = FALSE, xlab = "Day", xlim=c(0,60), break.time.by = 10, position= position_dodge(0.9), font.tickslab = c(12), font.legend = c(13))
 
 #add colours and labels
 SKN_LS_plot <- SKN_LS_plot$plot+
-  scale_colour_manual(labels = c('control',daf_label), , values = c('#E64B35FF','#4DBBD5FF'))
+  scale_colour_manual(labels = c('ev',daf_label), , values = c('#E64B35FF','#4DBBD5FF'))
 
 SKN_LS_plot
 
@@ -591,11 +678,11 @@ SKN_LS_matcen <- SKN_LS %>%
 surv<-survfit(Surv(Age,Event)~Treatment,data=SKN_LS_matcen)
 
 #survival plot
-SKN_LS_matcen_plot <-ggsurvplot(surv, ylab="Survival probability", data = SKN_LS_matcen, size= 0.8, font.ylab= 13, font.xlab= 13, legend = c(0.8, 0.8), legend.labs = c( "control", "daf-2"),  legend.title = "", title = skn1_label, censor = FALSE, xlab = "Day", xlim=c(0,60), break.time.by = 10, position= position_dodge(0.9), font.tickslab = c(12), font.legend = c(13))
+SKN_LS_matcen_plot <-ggsurvplot(surv, ylab="Survival probability", data = SKN_LS_matcen, size= 0.8, font.ylab= 13, font.xlab= 13, legend = c(0.8, 0.8), legend.labs = c( "ev", "daf-2"),  legend.title = "", title = skn1_label, censor = FALSE, xlab = "Day", xlim=c(0,60), break.time.by = 10, position= position_dodge(0.9), font.tickslab = c(12), font.legend = c(13))
 
 #add colours and labels
 SKN_LS_matcen_plot <- SKN_LS_matcen_plot$plot+
-  scale_colour_manual(labels = c('control',daf_label), , values = c('#E64B35FF','#4DBBD5FF'))
+  scale_colour_manual(labels = c('ev',daf_label), , values = c('#E64B35FF','#4DBBD5FF'))
 
 SKN_LS_matcen_plot
 
@@ -605,6 +692,49 @@ cox_SKN <- coxme(Surv(Age, Event) ~ Treatment + (1|Plate.ID), data = SKN_LS)
 summary(cox_SKN)
 plot(cox.zph(cox_SKN))#looks OK
 cox.zph(cox_SKN)#not great, but plot is OK
+
+
+#Use emmeans because of negligible effect of plate.ID
+SKN_emm <- emmeans(cox_SKN, ~ Treatment)  # EMMs of treatment 
+SKN_emm
+
+#Get contrasts
+contrasts_SKN <- contrast(SKN_emm, method = "revpairwise")
+
+#make a dataframe out of the contrast summary
+df_SKN <- as.data.frame(summary(contrasts_SKN, infer = TRUE))
+
+# Rename columns
+names(df_SKN)[names(df_SKN) == "estimate"] <- "logHR"
+df_SKN$HR <- exp(df_SKN$logHR)
+df_SKN$lower.HR <- exp(df_SKN$asymp.LCL)
+df_SKN$upper.HR <- exp(df_SKN$asymp.UCL)
+
+#fix labels
+df_SKN$Comparison <- df_SKN$contrast
+
+#Create forest plot for differences of treatments within strains
+SKN_contrasts <- ggplot(df_SKN, aes(x = Comparison, y = logHR)) +
+  geom_point(size = 4, color = '#4DBBD5FF') +
+  geom_hline(yintercept = 0, linetype = "dashed", size = 1.2, color = '#E64B35FF', linewidth = 0.8) +
+  geom_errorbar(aes(ymin = asymp.LCL, ymax = asymp.UCL), width = 0.2, size = 1.1,color ='#4DBBD5FF')+
+  coord_flip() +
+  scale_x_discrete(labels = c(''))+
+  labs(
+    title = "",
+    x = "",
+    y = "Log hazard ratio (HR)"
+  ) +
+  theme_minimal(base_size = 12)+
+  theme(axis.text = element_text(size = 13),
+        axis.title = element_text(size = 14),
+      axis.line.x = ggplot2::element_line(color = "black", size = 0.5),
+      axis.line.y = ggplot2::element_line(color = "black", size = 0.5),
+        legend.position = 'none')
+
+SKN_contrasts
+
+
 
 #create forest plot
 forest_SKN <- meforest(cox_SKN, 'control')
@@ -621,11 +751,51 @@ forest_SKN_matcen <- meforest(cox_SKN_matcen, 'control')
 forest_SKN_matcen
 
 
+#Use emmeans because of negligible effect of plate.ID
+SKN_NM_emm <- emmeans(cox_SKN_matcen, ~ Treatment)  # EMMs of treatment 
+SKN_NM_emm
+
+#Get contrasts
+contrasts_SKN_NM <- contrast(SKN_NM_emm, method = "revpairwise")
+
+#make a dataframe out of the contrast summary
+df_SKN_NM <- as.data.frame(summary(contrasts_SKN_NM, infer = TRUE))
+
+# Rename columns
+names(df_SKN_NM)[names(df_SKN_NM) == "estimate"] <- "logHR"
+df_SKN_NM$HR <- exp(df_SKN_NM$logHR)
+df_SKN_NM$lower.HR <- exp(df_SKN_NM$asymp.LCL)
+df_SKN_NM$upper.HR <- exp(df_SKN_NM$asymp.UCL)
+
+#fix labels
+df_SKN_NM$Comparison <- df_SKN_NM$contrast
+
+#Create forest plot for differences of treatments within strains
+SKN_NM_contrasts <- ggplot(df_SKN_NM, aes(x = Comparison, y = logHR)) +
+  geom_point(size = 4, color = '#4DBBD5FF') +
+  geom_hline(yintercept = 0, linetype = "dashed", size = 1.2, color = '#E64B35FF', linewidth = 0.8) +
+  geom_errorbar(aes(ymin = asymp.LCL, ymax = asymp.UCL), width = 0.2, size = 1.1,color ='#4DBBD5FF')+
+  coord_flip() +
+  scale_x_discrete(labels = c(''))+
+  labs(
+    title = "",
+    x = "",
+    y = "Log hazard ratio (HR)"
+  ) +
+  theme_minimal(base_size = 12)+
+  theme(axis.text = element_text(size = 13),
+        axis.title = element_text(size = 14),
+      axis.line.x = ggplot2::element_line(color = "black", size = 0.5),
+      axis.line.y = ggplot2::element_line(color = "black", size = 0.5),
+        legend.position = 'none')
+
+SKN_NM_contrasts
+
 #combine plots
-SKN_mat_inc <- ggarrange(SKN_LS_plot, forest_SKN, nrow = 2, ncol = 1, heights = c(2,1), labels = c('B',''), common.legend = T)
+SKN_mat_inc <- ggarrange(SKN_LS_plot, SKN_contrasts+theme(plot.margin = margin(t = 0, r = 0.15, b = 0, l = 0.75, unit = "cm")), nrow = 2, ncol = 1, heights = c(2,1), labels = c('B','E'), common.legend = T)
 SKN_mat_inc
 
-SKN_mat_exc <- ggarrange(SKN_LS_matcen_plot, forest_SKN_matcen, nrow = 2, ncol = 1, heights = c(2,1), labels = c('B',''), common.legend = T)
+SKN_mat_exc <- ggarrange(SKN_LS_matcen_plot, SKN_NM_contrasts+theme(plot.margin = margin(t = 0, r = 0.15, b = 0, l = 0.75, unit = "cm")), nrow = 2, ncol = 1, heights = c(2,1), labels = c('B','E'), common.legend = T)
 SKN_mat_exc
 
 ```
@@ -643,13 +813,13 @@ SKN_mat_exc
   labs(y="Offspring number", x="Day", size=13)+
   labs(col="")+
   labs(title = daf16_label)+
-  theme(axis.title.y = element_text(size=13),
+  theme(axis.title.y = element_text(size=14),
         axis.text.y = element_text(size = 12))+
-  theme(axis.title.x = element_text(size=13),
+  theme(axis.title.x = element_text(size=14),
         axis.text.x = element_text(size = 12),
         title = element_text(size = 14))+
   theme(legend.text = element_text(size = 12))+
-  scale_color_manual(values=c('#E64B35FF','#4DBBD5FF'),, labels = c('control', daf_label))+
+  scale_color_manual(values=c('#E64B35FF','#4DBBD5FF'),, labels = c('ev', daf_label))+
   theme(legend.key.width = unit(0.5,"cm"))+
   coord_cartesian(ylim = c(0,85))+
   theme(legend.position = c(0.8,0.9))
@@ -819,7 +989,7 @@ legend.title = "", title = daf16_label, censor = FALSE, xlab = "Day", xlim=c(0,6
 
 #fix colours and labels
 DAF16_LS_plot <- DAF16_LS_plot$plot+
-  scale_colour_manual(labels = c('control',daf_label), , values = c('#E64B35FF','#4DBBD5FF'))
+  scale_colour_manual(labels = c('ev',daf_label), , values = c('#E64B35FF','#4DBBD5FF'))
 
 DAF16_LS_plot
 
@@ -844,6 +1014,50 @@ cox_DAF16 <- coxme(Surv(Age, Event) ~ Treatment + (1|Plate.ID), data = DAF16_LS)
 summary(cox_DAF16)
 cox.zph(cox_DAF16)#OK
 
+
+
+#Use emmeans because of negligible effect of plate.ID
+DAF16_emm <- emmeans(cox_DAF16, ~ Treatment)  # EMMs of treatment 
+DAF16_emm
+
+#Get contrasts
+contrasts_DAF16 <- contrast(DAF16_emm, method = "revpairwise")
+
+#make a dataframe out of the contrast summary
+df_DAF16 <- as.data.frame(summary(contrasts_DAF16, infer = TRUE))
+
+# Rename columns
+names(df_DAF16)[names(df_DAF16) == "estimate"] <- "logHR"
+df_DAF16$HR <- exp(df_DAF16$logHR)
+df_DAF16$lower.HR <- exp(df_DAF16$asymp.LCL)
+df_DAF16$upper.HR <- exp(df_DAF16$asymp.UCL)
+
+#fix labels
+df_DAF16$Comparison <- df_DAF16$contrast
+
+#Create forest plot for differences of treatments within strains
+DAF16_contrasts <- ggplot(df_DAF16, aes(x = Comparison, y = logHR)) +
+  geom_point(size = 4, color = '#4DBBD5FF') +
+  geom_hline(yintercept = 0, linetype = "dashed", size = 1.2, color = '#E64B35FF', linewidth = 0.8) +
+  geom_errorbar(aes(ymin = asymp.LCL, ymax = asymp.UCL), width = 0.2, size = 1.1,color ='#4DBBD5FF')+
+  coord_flip() +
+  scale_x_discrete(labels = c(''))+
+  labs(
+    title = "",
+    x = "",
+    y = "Log hazard ratio (HR)"
+  ) +
+  theme_minimal(base_size = 12)+
+  theme(axis.text = element_text(size = 13),
+        axis.title = element_text(size = 14),
+      axis.line.x = ggplot2::element_line(color = "black", size = 0.5),
+      axis.line.y = ggplot2::element_line(color = "black", size = 0.5),
+        legend.position = 'none')
+
+DAF16_contrasts
+
+
+
 #create forest plot
 forest_DAF16 <- meforest(cox_DAF16, 'control')
 forest_DAF16
@@ -853,15 +1067,57 @@ cox_DAF16_matcen <- coxme(Surv(Age, Event) ~ Treatment + (1|Plate.ID), data = DA
 summary(cox_DAF16_matcen)
 cox.zph(cox_DAF16_matcen)
 
+
+
+#Use emmeans because of negligible effect of plate.ID
+DAF16_NM_emm <- emmeans(cox_DAF16_matcen, ~ Treatment)  # EMMs of treatment 
+DAF16_NM_emm
+
+#Get contrasts
+contrasts_DAF16_NM <- contrast(DAF16_NM_emm, method = "revpairwise")
+
+#make a dataframe out of the contrast summary
+df_DAF16_NM <- as.data.frame(summary(contrasts_DAF16_NM, infer = TRUE))
+
+# Rename columns
+names(df_DAF16_NM)[names(df_DAF16_NM) == "estimate"] <- "logHR"
+df_DAF16_NM$HR <- exp(df_DAF16_NM$logHR)
+df_DAF16_NM$lower.HR <- exp(df_DAF16_NM$asymp.LCL)
+df_DAF16_NM$upper.HR <- exp(df_DAF16_NM$asymp.UCL)
+
+#fix labels
+df_DAF16_NM$Comparison <- df_DAF16_NM$contrast
+
+#Create forest plot for differences of treatments within strains
+DAF16_NM_contrasts <- ggplot(df_DAF16_NM, aes(x = Comparison, y = logHR)) +
+  geom_point(size = 4, color = '#4DBBD5FF') +
+  geom_hline(yintercept = 0, linetype = "dashed", size = 1.2, color = '#E64B35FF', linewidth = 0.8) +
+  geom_errorbar(aes(ymin = asymp.LCL, ymax = asymp.UCL), width = 0.2, size = 1.1,color ='#4DBBD5FF')+
+  coord_flip() +
+  scale_x_discrete(labels = c(''))+
+  labs(
+    title = "",
+    x = "",
+    y = "Log hazard ratio (HR)"
+  ) +
+  theme_minimal(base_size = 12)+
+  theme(axis.text = element_text(size = 13),
+        axis.title = element_text(size = 14),
+      axis.line.x = ggplot2::element_line(color = "black", size = 0.5),
+      axis.line.y = ggplot2::element_line(color = "black", size = 0.5),
+        legend.position = 'none')
+
+DAF16_NM_contrasts
+
 #create forest plot
 forest_DAF16_matcen <- meforest(cox_DAF16_matcen, 'control')
 forest_DAF16_matcen
 
 #combine plots
-DAF16_mat_inc <- ggarrange(DAF16_LS_plot +theme(legend.position = 'none'), forest_DAF16, nrow = 2, ncol = 1, heights = c(2,1), labels = c('C',''))
+DAF16_mat_inc <- ggarrange(DAF16_LS_plot +theme(legend.position = 'none'), DAF16_contrasts+theme(plot.margin = margin(t = 0, r = 0.15, b = 0, l = 0.75, unit = "cm")), nrow = 2, ncol = 1, heights = c(2,1), labels = c('C','F'))
 DAF16_mat_inc
 
-DAF16_mat_exc <- ggarrange(DAF16_LS_matcen_plot +theme(legend.position = 'none'), forest_DAF16_matcen, nrow = 2, ncol = 1, heights = c(2,1), labels = c('C',''))
+DAF16_mat_exc <- ggarrange(DAF16_LS_matcen_plot +theme(legend.position = 'none'), DAF16_NM_contrasts+theme(plot.margin = margin(t = 0, r = 0.15, b = 0, l = 0.75, unit = "cm")), nrow = 2, ncol = 1, heights = c(2,1), labels = c('C','F'))
 DAF16_mat_exc
 
 
@@ -878,14 +1134,14 @@ DAF16_mat_exc
 all_LS_mat_exc <- ggarrange(N2_mat_exc+theme(plot.margin = margin(1,0,0,0, 'cm')), SKN_mat_exc, DAF16_mat_exc+theme(plot.margin = margin(1,0,0,0, 'cm')), ncol = 3, nrow = 1)
 all_LS_mat_exc
 
-ggsave(plot = all_LS_mat_exc, 'all_LS_mat_exc.png', height = 5, width = 10, bg = 'white')
+ggsave(plot = all_LS_mat_exc, 'all_LS_mat_exc.png', height = 5, width = 9, bg = 'white')
 
 
 #including matricides (supp mat)
 all_LS_mat_inc <- ggarrange(N2_mat_inc+theme(plot.margin = margin(1,0,0,0, 'cm')), SKN_mat_inc, DAF16_mat_inc+theme(plot.margin = margin(1,0,0,0, 'cm')), ncol = 3, nrow = 1)
 all_LS_mat_inc
 
-ggsave(plot = all_LS_mat_inc, 'all_LS_mat_inc.png', height = 5, width = 10, bg = 'white')
+ggsave(plot = all_LS_mat_inc, 'all_LS_mat_inc.png', height = 5, width = 9, bg = 'white')
 
 
 ##############
@@ -895,10 +1151,46 @@ ggsave(plot = all_LS_mat_inc, 'all_LS_mat_inc.png', height = 5, width = 10, bg =
 all_repro <- ggarrange(N2_rep, SKN_rep , DAF16_rep, nrow = 3, ncol = 1, common.legend = T, labels = c('A','B','C'))
 all_repro
 
-ggsave(plot = all_repro, 'all_repro.png', height = 10, width = 8, bg = 'white')
+ggsave(plot = all_repro, 'all_repro.png', height = 9, width = 6, bg = 'white')
 
 
 ```
 
+#Temperature Plot
+```{r}
+
+head(temp)
 
 
+# Convert to datetime (add a dummy date)
+temp$Time <- as.POSIXct(paste("2026-01-01", temp$Time), format = "%Y-%m-%d %H:%M")
+
+# Create shifted time (preserve POSIXct class)
+temp$Time_shifted <- temp$Time
+temp$Time_shifted[format(temp$Time, "%H") < "05"] <- 
+  temp$Time_shifted[format(temp$Time, "%H") < "05"] + 86400
+
+# Convert back to POSIXct (ifelse turns it numeric)
+temp$Time_shifted <- as.POSIXct(temp$Time_shifted, origin = "1970-01-01")
+
+
+# Plot
+temp_plot <- ggplot(temp, aes(x = Time_shifted, y = Temp)) +
+  geom_line(color = 'skyblue2', linewidth = 1.2) +
+  #geom_point(color = 'cornflowerblue') +
+  scale_x_datetime(
+    date_breaks = "4 hours",
+    date_labels = "%H:%M"
+  ) +
+  labs(
+    x = "Time",
+    y = "Temperature (°C)"
+  ) +
+  theme_minimal()
+
+
+temp_plot
+
+ggsave(plot = temp_plot, 'temp_plot.png', height = 3, width = 6, bg = 'white')
+
+```
