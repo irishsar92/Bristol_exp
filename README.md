@@ -5,12 +5,13 @@ Sara D. Irish*, Annabel Kimberley, Simone Immler, Alexei A. Maklakov <br>
   *Corresponding author: s.irish@uea.ac.uk <br>
 ---------------------------------------------------------------------------------------------------------------------------------
 <br>
-All data and code included here for manuscript entitled: ‘Cost-free lifespan extension through reduced adulthood insulin-signalling is robust to natural environmental challenges.’ Datasets can be found in the ‘data’ folder and all code for plots and analysis can be found in the ‘code’ folder. All data were collected at University of East Anglia, Norwich, UK. The purpose of this project was to test the whether the cost-free lifespan benefits reduced insulin signalling (IIS) in adulthood in Caenorhabditis elegans nematodes was robust to natural temperature cycles, rather than standard laboratory conditions. We used RNAi to knockdown the daf-2 gene, the IIS receptor in C. elegans (N2) after sexual maturation and exposed nematodes to daily temperature cycles between 10 and 15C, similar to what would be experienced on an autumn day in their natural habitat in Bristol, UK. We assessed their lifespan and daily reproductive output in this environment. Additionally, we performed these experiments in skn-1 and daf-16 loss of function mutants to try to find the mechanisms behind lifespan extension in semi-natural temperature conditions. 
+All data and code included here for manuscript entitled: ‘Cost-free lifespan extension through reduced adulthood insulin-signalling is robust to natural environmental challenges.’ Datasets can be found in the ‘data’ folder and all code for plots and analysis can be found in 'Bristol_exp_MD.rmd' in the ‘code’ folder. All data were collected at University of East Anglia, Norwich, UK. The purpose of this project was to test the whether the cost-free lifespan benefits reduced insulin signalling (IIS) in adulthood in Caenorhabditis elegans nematodes was robust to natural temperature cycles, rather than standard laboratory conditions. We used RNAi to knockdown the daf-2 gene, the IIS receptor in C. elegans (N2) after sexual maturation and exposed nematodes to daily temperature cycles between 10 and 15C, similar to what would be experienced on an autumn day in their natural habitat in Bristol, UK. We assessed their lifespan and daily reproductive output in this environment. Additionally, we performed these experiments in skn-1 and daf-16 loss of function mutants to try to find the mechanisms behind lifespan extension in semi-natural temperature conditions. 
 <br>
 
 ---------------------------------------------------------------------------------------------------------------------------------
-
-File descriptions:<br>
+<br>
+Data file descriptions:<br>
+------------------------
 <br>
 File: ‘Bristol_LS_mut.csv’<br>
 This file contains lifespan data for C. elegans N2 wildtype strain and skn-1 and daf-16 loss of function mutant strains.<br>
